@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Product Search (DummyJSON)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    #searchForm {
+      display: flex;
+      margin-bottom: 10px;
+    }
+    #searchInput {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px 0 0 5px;
+      outline: none;
+    }
+    #searchButton {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 0 5px 5px 0;
+      cursor: pointer;
+    }
+    #searchButton:hover {
+      background-color: #45a049;
+    }
+    #sortSelect {
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 20px;
+      width: 100%;
+    }
+    #errorMessage {
+      color: red;
+      margin-bottom: 10px;
+      display: none;
+    }
+    #productList {
+      list-style: none;
+      padding: 0;
+    }
+    .productItem {
+      background-color: white;
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .productItem img {
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+      margin-right: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Product Search</h1>
+  <form id="searchForm">
+    <input type="text" id="searchInput" placeholder="Search products by name..." />
+    <button type="submit" id="searchButton">Search</button>
+  </form>
+
+  <select id="sortSelect">
+    <option value="default">Sort by Price</option>
+    <option value="asc">Price: Low to High</option>
+    <option value="desc">Price: High to Low</option>
+  </select>
+
+  <div id="errorMessage">Search field cannot be empty.</div>
+  <ul id="productList"></ul>
+
+  <script>
+    const searchForm = document.getElementById('searchForm');
+    const searchInput = document.getElementById('searchInput');
+    const productList = document.getElementById('productList');
+    const errorMessage = document.getElementById('errorMessage');
+    const sortSelect = document.getElementById('sortSelect');
+
+    let allProducts = [];
+    let currentFiltered = [];
+
+    // Fetch products from dummyjson.com
+    async function fetchProducts() {
+      try {
+        const res = await fetch('https://dummyjson.com/products');
+        const data = await res.json();
+        allProducts = data.products;
+        currentFiltered = [...allProducts];
+        renderProducts(currentFiltered);
+      } catch (err) {
+        console.error("API fetch failed", err);
+        errorMessage.textContent = "Failed to load products.";
+        errorMessage.style.display = "block";
+      }
+    }
+
+    // Render products
+    function renderProducts(products) {
+      productList.innerHTML = '';
+      if (products.length === 0) {
+        productList.innerHTML = '<li class="productItem">No products found.</li>';
+        return;
+      }
+
+      products.forEach(product => {
+        const li = document.createElement('li');
+        li.className = 'productItem';
+        li.innerHTML = `
+          <img src="${product.thumbnail}" alt="${product.title}" />
+          <div>
+            <h3>${product.title}</h3>
+            <p><strong>Price:</strong> $${product.price}</p>
+          </div>
+        `;
+        productList.appendChild(li);
+      });
+    }
+
+    // Handle search
+    searchForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const query = searchInput.value.trim();
+      if (!query) {
+        errorMessage.textContent = "Search field cannot be empty.";
+        errorMessage.style.display = "block";
+        return;
+      }
+      errorMessage.style.display = "none";
+
+      currentFiltered = allProducts.filter(product =>
+        product.title.toLowerCase().includes(query.toLowerCase())
+      );
+      applySorting();
+    });
+
+    // Handle sorting
+    sortSelect.addEventListener('change', () => {
+      applySorting();
+    });
+
+    function applySorting() {
+      const sortValue = sortSelect.value;
+      let sorted = [...currentFiltered];
+
+      if (sortValue === 'asc') {
+        sorted.sort((a, b) => a.price - b.price);
+      } else if (sortValue === 'desc') {
+        sorted.sort((a, b) => b.price - a.price);
+      }
+
+      renderProducts(sorted);
+    }
+
+    // Initial fetch
+    fetchProducts();
+  </script>
+</body>
+</html>
